@@ -24,9 +24,9 @@
 
     function createLanguageSwitcher(data, siteRoot) {
         // Build language list from languages.json
-        const languages = Object.entries(data).map(([code, info]) => ({
-            langtag: info.langtag,
-            langname: info.langname
+        const languages = data.languages.map((item) => ({
+            langtag: item.langtag,
+            langname: item.langname
         }));
 
         // Parse URL:  /<langtag>/<version>/<pagePath>
