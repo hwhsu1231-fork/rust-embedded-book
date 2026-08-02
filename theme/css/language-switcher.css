@@ -1,3 +1,16 @@
+/* Ensure right-buttons uses flex alignment (mirrors cairo-book chrome.css) */
+.right-buttons {
+    display: flex;
+    align-items: center;
+    margin: 0 15px;
+}
+
+.right-buttons a {
+    text-decoration: none;
+}
+
+/* ---- Language switcher dropdown ---- */
+
 .language-switcher {
     display: flex;
     align-items: center;
@@ -8,6 +21,7 @@
 .language-switcher label {
     font-size: 12px;
     color: var(--icons);
+    white-space: nowrap;
 }
 
 .language-switcher select {
@@ -23,4 +37,11 @@
 .language-switcher select:hover {
     border-color: var(--icons-hover);
     color: var(--icons-hover);
+}
+
+/* Hide label on narrow screens to save space */
+@media only screen and (max-width: 600px) {
+    .language-switcher label {
+        display: none;
+    }
 }
