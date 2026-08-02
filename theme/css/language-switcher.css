@@ -19,6 +19,10 @@
     margin-right: 10px;
 }
 
+/* Deterministic order regardless of async insertion timing */
+.language-switcher { order: 0; }
+.version-switcher  { order: 1; }
+
 .language-switcher label,
 .version-switcher label {
     font-size: 12px;
