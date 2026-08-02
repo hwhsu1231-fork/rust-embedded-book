@@ -1,7 +1,7 @@
 (() => {
     const fullPath = window.location.pathname;
 
-    // Resolve site root by walking up until languages.json is found.
+    // Walk up from the current page until languages.json is found.
     async function resolveSiteRoot() {
         let candidate = fullPath.replace(/\/[^/]*$/, "");
         for (let i = 0; i < 6; i++) {
@@ -17,17 +17,23 @@
         return null;
     }
 
-    resolveSiteRoot().then((result) => {
-        if (!result) return;
-        createLanguageSwitcher(result.data, result.siteRoot);
-    }).catch((err) => console.warn("Could not load languages.json:", err));
+    function whenReady(fn) {
+        if (document.readyState === "loading") {
+            document.addEventListener("DOMContentLoaded", fn);
+        } else {
+            fn();
+        }
+    }
+
+    whenReady(() => {
+        resolveSiteRoot().then((result) => {
+            if (!result) return;
+            createLanguageSwitcher(result.data, result.siteRoot);
+        }).catch((err) => console.warn("Could not load languages.json:", err));
+    });
 
     function createLanguageSwitcher(data, siteRoot) {
-        // Build language list from languages.json
-        const languages = data.languages.map((item) => ({
-            langtag: item.langtag,
-            langname: item.langname
-        }));
+        const languages = data.languages;
 
         // Parse URL:  /<langtag>/<version>/<pagePath>
         const afterSite = fullPath.substring(siteRoot.length);
@@ -45,18 +51,17 @@
                 : "/";
         }
 
-        // Validate that currentLangtag is actually a known language
+        // Validate that currentLangtag is a known language
         const knownLangtags = new Set(languages.map((l) => l.langtag));
         if (!knownLangtags.has(currentLangtag)) {
             currentLangtag = "";
         }
 
-        // Build the tail: /version/pagePath  (what stays the same when language changes)
+        // Tail preserved when switching language: /version/pagePath
         let tail = "";
         if (version) tail += "/" + version;
         tail += pagePath;
 
-        // Create dropdown
         const container = document.createElement("div");
         container.className = "language-switcher";
         container.innerHTML =
@@ -70,18 +75,16 @@
             ).join("") +
             '</select>';
 
-        // Insert into menu bar
         const menuBar = document.querySelector(".right-buttons");
         if (menuBar) {
             menuBar.insertBefore(container, menuBar.firstChild);
         }
 
-        // Handle language change — swap langtag, keep version + pagePath
         document.getElementById("language-select").addEventListener("change", (e) => {
-            const newLangtag = e.target.value;
-            const newPath = siteRoot + "/" + newLangtag + tail;
-            window.location.href = newPath;
+            window.location.href = siteRoot + "/" + e.target.value + tail;
         });
     }
 })();
+
+
 
