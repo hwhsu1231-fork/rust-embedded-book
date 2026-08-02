@@ -103,6 +103,9 @@ jobs:
           </html>
           EOF
 
+      - name: Copy languages.json to book root
+        run: cp languages.json book/
+
       - name: Deploy book
         # if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
         if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/multilingual-with-localizethedocs' }}

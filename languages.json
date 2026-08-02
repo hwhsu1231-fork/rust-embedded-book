@@ -1,11 +1,14 @@
 {
   "en_US" : {
-    "langtag" : "en-us"
+    "langtag" : "en-us",
+    "langname" : "English"
   },
   "zh_CN" : {
-    "langtag" : "zh-cn"
+    "langtag" : "zh-cn",
+    "langname" : "简体中文"
   },
   "zh_TW" : {
-    "langtag" : "zh-tw"
+    "langtag" : "zh-tw",
+    "langname" : "繁體中文"
   }
 }
