@@ -5,3 +5,10 @@ title = "The Embedded Rust Book"
 
 [output.html]
 git-repository-url = "https://github.com/rust-embedded/book"
+additional-css = [
+  "theme/css/language-picker.css",
+]
+
+[preprocessor.gettext]
+optional = true
+after = ["links"]

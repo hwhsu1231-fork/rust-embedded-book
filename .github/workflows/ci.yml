@@ -7,6 +7,11 @@ on:
   pull_request: # Run CI for PRs on any branch
   merge_group: # Run CI for the GitHub merge queue
 
+env:
+  # Update the language picker in index.hbs to link new languages.
+  MDBOOK_VERSION: 0.5.1
+  MDBOOK_I18N_HELPERS_VERSION: 0.4.0
+
 jobs:
   build:
     runs-on: ubuntu-24.04
@@ -20,35 +25,87 @@ jobs:
       - name: Put pip binary directory into path
         run: echo "~/.local/bin" >> $GITHUB_PATH
 
-      - name: Cache Cargo installed binaries
-        uses: actions/cache@v4
-        id: cache-cargo
-        with:
-          path: ~/cargo-bin
-          key: cache-cargo
-      - name: Install mdbook
-        if: steps.cache-cargo.outputs.cache-hit != 'true'
-        uses: actions-rs/install@v0.1
-        with:
-          crate: mdbook
-          version: latest
-      - name: Copy mdbook to cache directory
-        if: steps.cache-cargo.outputs.cache-hit != 'true'
-        run: |
-          mkdir ~/cargo-bin
-          cp ~/.cargo/bin/mdbook ~/cargo-bin
-      - name: Put new cargo binary directory into path
-        run: echo "~/cargo-bin" >> $GITHUB_PATH
+      # - name: Cache Cargo installed binaries
+      #   uses: actions/cache@v4
+      #   id: cache-cargo
+      #   with:
+      #     path: ~/cargo-bin
+      #     key: cache-cargo
+      # - name: Install mdbook
+      #   if: steps.cache-cargo.outputs.cache-hit != 'true'
+      #   uses: actions-rs/install@v0.1
+      #   with:
+      #     crate: mdbook
+      #     version: latest
 
-      - name: Build book
-        run: mdbook build
-      - name: Test book
-        run: mdbook test
-      - name: Check links
-        run: linkchecker book
+      - name: Update rustup
+        run: rustup self update
+
+      - name: Install Rust
+        run: |
+          rustup set profile minimal
+          rustup toolchain install nightly -c rust-docs
+          rustup default nightly
+
+      - name: Install mdbook
+        run: |
+          cargo install mdbook --locked --version ${{ env.MDBOOK_VERSION }}
+
+      - name: Install mdbook-i18n-helpers
+        run: |
+          cargo install mdbook-i18n-helpers --locked --version ${{ env.MDBOOK_I18N_HELPERS_VERSION }}
+
+      # - name: Copy mdbook to cache directory
+      #   if: steps.cache-cargo.outputs.cache-hit != 'true'
+      #   run: |
+      #     mkdir ~/cargo-bin
+      #     cp ~/.cargo/bin/mdbook ~/cargo-bin
+      # - name: Put new cargo binary directory into path
+      #   run: echo "~/cargo-bin" >> $GITHUB_PATH
+
+      - name: Download the .po files from localizethedocs/rust-embedded-book-l10n
+        run: |
+          git clone --branch po/master https://github.com/localizethedocs/rust-embedded-book-l10n.git po
+
+      # - name: Build book
+      #   run: mdbook build
+
+      - name: Build all translations
+        run: |
+          for po_lang in $(jq -r 'keys[]' languages.json); do
+            echo "::group::Building $po_lang translation"
+            # Set language and adjust site URL. Clear the redirects
+            # since they are in sync with the source files, not the
+            # translation.
+            langtag=$(jq -r --arg lang "$po_lang" '.[$lang].langtag' languages.json)
+            MDBOOK_BOOK__LANGUAGE=$po_lang \
+            mdbook build -d book/$langtag
+            echo "::endgroup::"
+          done
+
+      # - name: Test book
+      #   run: mdbook test
+      # - name: Check links
+      #   run: linkchecker book
+
+      - name: Create root index.html redirect
+        run: |
+          default_langtag=$(jq -r '.en_US.langtag' languages.json)
+          cat > book/index.html << EOF
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <meta http-equiv="refresh" content="0; url=./${default_langtag}/" />
+          </head>
+          <body>
+            <p>Redirecting to <a href="./${default_langtag}/">${default_langtag}</a></p>
+          </body>
+          </html>
+          EOF
 
       - name: Deploy book
-        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
+        # if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/multilingual-with-localizethedocs' }}
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}

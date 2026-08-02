@@ -1,0 +1,11 @@
+{
+  "en_US" : {
+    "langtag" : "en-us"
+  },
+  "zh_CN" : {
+    "langtag" : "zh-cn"
+  },
+  "zh_TW" : {
+    "langtag" : "zh-tw"
+  }
+}
