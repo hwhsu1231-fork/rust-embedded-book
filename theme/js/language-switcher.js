@@ -1,12 +1,9 @@
 (() => {
-    // Detect site root and current state from the URL path.
     const fullPath = window.location.pathname;
 
-    // The book is deployed with language subdirectories derived from
-    // languages.json langtag values (e.g. /en-us/, /zh-cn/, /zh-tw/).
-    // Walk up from the current page until we find languages.json.
+    // Resolve site root by walking up until languages.json is found.
     async function resolveSiteRoot() {
-        let candidate = fullPath.replace(/\/[^/]*$/, ""); // drop last segment
+        let candidate = fullPath.replace(/\/[^/]*$/, "");
         for (let i = 0; i < 6; i++) {
             const url = (candidate || "/") + "/languages.json";
             try {
@@ -32,22 +29,32 @@
             langname: info.langname
         }));
 
-        // Determine current language from path
+        // Parse URL:  /<langtag>/<version>/<pagePath>
+        const afterSite = fullPath.substring(siteRoot.length);
+        const parts = afterSite.split("/").filter(Boolean);
+
         let currentLangtag = "";
-        for (const lang of languages) {
-            const pattern = "/" + lang.langtag;
-            if (fullPath.startsWith(siteRoot + pattern)) {
-                currentLangtag = lang.langtag;
-                break;
-            }
+        let version = "";
+        let pagePath = "/";
+
+        if (parts.length >= 1) {
+            currentLangtag = parts[0];
+            version = parts.length >= 2 ? parts[1] : "";
+            pagePath = parts.length >= 3
+                ? "/" + parts.slice(2).join("/")
+                : "/";
         }
 
-        // Compute the page path relative to the language directory
-        let pagePath = "/";
-        if (currentLangtag) {
-            const prefix = siteRoot + "/" + currentLangtag;
-            pagePath = fullPath.substring(prefix.length) || "/";
+        // Validate that currentLangtag is actually a known language
+        const knownLangtags = new Set(languages.map((l) => l.langtag));
+        if (!knownLangtags.has(currentLangtag)) {
+            currentLangtag = "";
         }
+
+        // Build the tail: /version/pagePath  (what stays the same when language changes)
+        let tail = "";
+        if (version) tail += "/" + version;
+        tail += pagePath;
 
         // Create dropdown
         const container = document.createElement("div");
@@ -69,11 +76,12 @@
             menuBar.insertBefore(container, menuBar.firstChild);
         }
 
-        // Handle language change
+        // Handle language change — swap langtag, keep version + pagePath
         document.getElementById("language-select").addEventListener("change", (e) => {
             const newLangtag = e.target.value;
-            const newPath = siteRoot + "/" + newLangtag + pagePath;
+            const newPath = siteRoot + "/" + newLangtag + tail;
             window.location.href = newPath;
         });
     }
 })();
+

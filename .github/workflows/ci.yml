@@ -11,6 +11,7 @@ env:
   # Update the language picker in index.hbs to link new languages.
   MDBOOK_VERSION: 0.5.1
   MDBOOK_I18N_HELPERS_VERSION: 0.4.0
+  VERSION: master
 
 jobs:
   build:
@@ -73,13 +74,10 @@ jobs:
       - name: Build all translations
         run: |
           for po_lang in $(jq -r 'keys[]' languages.json); do
-            echo "::group::Building $po_lang translation"
-            # Set language and adjust site URL. Clear the redirects
-            # since they are in sync with the source files, not the
-            # translation.
+            echo "::group::Building $po_lang / ${{ env.VERSION }}"
             langtag=$(jq -r --arg lang "$po_lang" '.[$lang].langtag' languages.json)
             MDBOOK_BOOK__LANGUAGE=$po_lang \
-            mdbook build -d book/$langtag
+            mdbook build -d book/$langtag/${{ env.VERSION }}
             echo "::endgroup::"
           done
 
@@ -95,16 +93,18 @@ jobs:
           <!DOCTYPE html>
           <html>
           <head>
-            <meta http-equiv="refresh" content="0; url=./${default_langtag}/" />
+            <meta http-equiv="refresh" content="0; url=./${default_langtag}/${{ env.VERSION }}/" />
           </head>
           <body>
-            <p>Redirecting to <a href="./${default_langtag}/">${default_langtag}</a></p>
+            <p>Redirecting to <a href="./${default_langtag}/${{ env.VERSION }}/">${default_langtag}/${{ env.VERSION }}</a></p>
           </body>
           </html>
           EOF
 
-      - name: Copy languages.json to book root
-        run: cp languages.json book/
+      - name: Copy metadata files to book root
+        run: |
+          cp languages.json book/
+          cp versions.json book/
 
       - name: Deploy book
         # if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}

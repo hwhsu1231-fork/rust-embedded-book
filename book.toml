@@ -10,6 +10,7 @@ additional-css = [
 ]
 additional-js = [
   "theme/js/language-switcher.js",
+  "theme/js/version-switcher.js",
 ]
 
 [preprocessor.gettext]
