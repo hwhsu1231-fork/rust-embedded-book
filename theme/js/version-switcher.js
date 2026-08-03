@@ -60,7 +60,7 @@
         const container = document.createElement("div");
         container.className = "version-switcher";
         container.innerHTML =
-            '<label for="version-select">Version:</label>' +
+            '<label for="version-select" title="Version"><i class="fa fa-code-fork"></i></label>' +
             '<select id="version-select">' +
             data.versions.map((v) =>
                 '<option value="' + v.version + '"' +

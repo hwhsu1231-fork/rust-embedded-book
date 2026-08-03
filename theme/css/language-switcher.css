@@ -25,9 +25,9 @@
 
 .language-switcher label,
 .version-switcher label {
-    font-size: 12px;
+    font-size: 1.6rem;
     color: var(--icons);
-    white-space: nowrap;
+    cursor: pointer;
 }
 
 .language-switcher select,
@@ -37,7 +37,7 @@
     border: 1px solid var(--icons);
     background: var(--bg);
     color: var(--icons);
-    font-size: 12px;
+    font-size: 1.6rem;
     cursor: pointer;
 }
 
@@ -45,12 +45,4 @@
 .version-switcher select:hover {
     border-color: var(--icons-hover);
     color: var(--icons-hover);
-}
-
-/* Hide labels on narrow screens to save space */
-@media only screen and (max-width: 700px) {
-    .language-switcher label,
-    .version-switcher label {
-        display: none;
-    }
 }

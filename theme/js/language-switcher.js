@@ -60,7 +60,7 @@
         const container = document.createElement("div");
         container.className = "language-switcher";
         container.innerHTML =
-            '<label for="language-select">Language:</label>' +
+            '<label for="language-select" title="Language"><i class="fa fa-globe"></i></label>' +
             '<select id="language-select">' +
             languages.map((lang) =>
                 '<option value="' + lang.langtag + '"' +
