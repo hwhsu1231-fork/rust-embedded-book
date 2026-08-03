@@ -25,6 +25,8 @@
 
 .language-switcher label,
 .version-switcher label {
+    display: flex;
+    align-items: center;
     font-size: 1.6rem;
     color: var(--icons);
     cursor: pointer;

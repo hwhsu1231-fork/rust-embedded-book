@@ -1,20 +1,18 @@
 (() => {
     const fullPath = window.location.pathname;
 
-    // Walk up from the current page until versions.json is found.
-    async function resolveSiteRoot() {
-        let candidate = fullPath.replace(/\/[^/]*$/, "");
-        for (let i = 0; i < 6; i++) {
-            const url = (candidate || "/") + "/versions.json";
-            try {
-                const resp = await fetch(url);
-                if (resp.ok) return { siteRoot: candidate || "/", data: await resp.json() };
-            } catch (_) { /* try parent */ }
-            const parent = candidate.replace(/\/[^/]*$/, "");
-            if (parent === candidate) break;
-            candidate = parent || "/";
-        }
-        return null;
+    // Derive siteRoot from a langtag segment (e.g. /xx-xx/) in the URL.
+    function deriveSiteRoot() {
+        const m = fullPath.match(/^(.+?)\/([a-z]{2}-[a-z]{2})\//);
+        return m ? m[1] : "";
+    }
+
+    const siteRoot = deriveSiteRoot();
+
+    function loadVersions() {
+        return fetch(siteRoot + "/versions.json")
+            .then((r) => { if (!r.ok) throw new Error("not found"); return r.json(); })
+            .catch(() => null);
     }
 
     function whenReady(fn) {
@@ -26,10 +24,10 @@
     }
 
     whenReady(() => {
-        resolveSiteRoot().then((result) => {
-            if (!result) return;
-            createVersionSwitcher(result.data, result.siteRoot);
-        }).catch((err) => console.warn("Could not load versions.json:", err));
+        loadVersions().then((data) => {
+            if (!data) return;
+            createVersionSwitcher(data, siteRoot);
+        });
     });
 
     function createVersionSwitcher(data, siteRoot) {
@@ -60,7 +58,11 @@
         const container = document.createElement("div");
         container.className = "version-switcher";
         container.innerHTML =
-            '<label for="version-select" title="Version"><i class="fa fa-code-fork"></i></label>' +
+            '<label for="version-select" title="Version">' +
+            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+            '<line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/>' +
+            '<path d="M18 9a9 9 0 0 1-9 9"/>' +
+            '</svg></label>' +
             '<select id="version-select">' +
             data.versions.map((v) =>
                 '<option value="' + v.version + '"' +

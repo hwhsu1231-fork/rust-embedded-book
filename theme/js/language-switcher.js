@@ -1,20 +1,20 @@
 (() => {
     const fullPath = window.location.pathname;
 
-    // Walk up from the current page until languages.json is found.
-    async function resolveSiteRoot() {
-        let candidate = fullPath.replace(/\/[^/]*$/, "");
-        for (let i = 0; i < 6; i++) {
-            const url = (candidate || "/") + "/languages.json";
-            try {
-                const resp = await fetch(url);
-                if (resp.ok) return { siteRoot: candidate || "/", data: await resp.json() };
-            } catch (_) { /* try parent */ }
-            const parent = candidate.replace(/\/[^/]*$/, "");
-            if (parent === candidate) break;
-            candidate = parent || "/";
-        }
-        return null;
+    // Derive siteRoot from a langtag segment (e.g. /xx-xx/) in the URL.
+    // This avoids CORS errors from walking up past the site root on
+    // subdirectory deployments like GitHub Pages.
+    function deriveSiteRoot() {
+        const m = fullPath.match(/^(.+?)\/([a-z]{2}-[a-z]{2})\//);
+        return m ? m[1] : "";
+    }
+
+    const siteRoot = deriveSiteRoot();
+
+    function loadLanguages() {
+        return fetch(siteRoot + "/languages.json")
+            .then((r) => { if (!r.ok) throw new Error("not found"); return r.json(); })
+            .catch(() => null);
     }
 
     function whenReady(fn) {
@@ -26,10 +26,10 @@
     }
 
     whenReady(() => {
-        resolveSiteRoot().then((result) => {
-            if (!result) return;
-            createLanguageSwitcher(result.data, result.siteRoot);
-        }).catch((err) => console.warn("Could not load languages.json:", err));
+        loadLanguages().then((data) => {
+            if (!data) return;
+            createLanguageSwitcher(data, siteRoot);
+        });
     });
 
     function createLanguageSwitcher(data, siteRoot) {
@@ -60,7 +60,11 @@
         const container = document.createElement("div");
         container.className = "language-switcher";
         container.innerHTML =
-            '<label for="language-select" title="Language"><i class="fa fa-globe"></i></label>' +
+            '<label for="language-select" title="Language">' +
+            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+            '<circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/>' +
+            '<path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>' +
+            '</svg></label>' +
             '<select id="language-select">' +
             languages.map((lang) =>
                 '<option value="' + lang.langtag + '"' +
