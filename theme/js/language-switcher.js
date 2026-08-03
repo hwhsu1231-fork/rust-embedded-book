@@ -34,33 +34,28 @@
 
     function createLanguageSwitcher(data, siteRoot) {
         const languages = data.languages;
+        const knownLangtags = new Set(languages.map((l) => l.langtag));
 
-        // Parse URL:  /<langtag>/<version>/<pagePath>
+        // Scan URL segments for a known langtag.  Supports all three layouts:
+        //   /<langtag>/<version>/<pagePath>
+        //   /<langtag>/<pagePath>
+        //   /<version>/<pagePath>            → langtag not found → skip
         const afterSite = fullPath.substring(siteRoot.length);
         const parts = afterSite.split("/").filter(Boolean);
 
         let currentLangtag = "";
-        let version = "";
-        let pagePath = "/";
-
-        if (parts.length >= 1) {
-            currentLangtag = parts[0];
-            version = parts.length >= 2 ? parts[1] : "";
-            pagePath = parts.length >= 3
-                ? "/" + parts.slice(2).join("/")
-                : "/";
+        let langtagIdx = -1;
+        for (let i = 0; i < parts.length; i++) {
+            if (knownLangtags.has(parts[i])) {
+                langtagIdx = i;
+                currentLangtag = parts[i];
+                break;
+            }
         }
+        if (langtagIdx < 0) return;   // no langtag in URL — nothing to switch
 
-        // Validate that currentLangtag is a known language
-        const knownLangtags = new Set(languages.map((l) => l.langtag));
-        if (!knownLangtags.has(currentLangtag)) {
-            currentLangtag = "";
-        }
-
-        // Tail preserved when switching language: /version/pagePath
-        let tail = "";
-        if (version) tail += "/" + version;
-        tail += pagePath;
+        // Everything after the langtag stays unchanged when switching.
+        const tail = "/" + parts.slice(langtagIdx + 1).join("/");
 
         const container = document.createElement("div");
         container.className = "language-switcher";

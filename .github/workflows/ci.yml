@@ -11,6 +11,8 @@ env:
   # Update the language picker in index.hbs to link new languages.
   MDBOOK_VERSION: 0.5.1
   MDBOOK_I18N_HELPERS_VERSION: 0.4.0
+  # Deployment layout:  plain | multilang | multiversion | full
+  DEPLOY_LAYOUT: full
   VERSION: master
 
 jobs:
@@ -73,13 +75,34 @@ jobs:
 
       - name: Build all translations
         run: |
-          for po_lang in $(jq -r '.languages[].code' languages.json); do
-            echo "::group::Building $po_lang / ${{ env.VERSION }}"
-            langtag=$(jq -r --arg lang "$po_lang" '.languages[] | select(.code == $lang) | .langtag' languages.json)
-            MDBOOK_BOOK__LANGUAGE=$po_lang \
-            mdbook build -d book/$langtag/${{ env.VERSION }}
-            echo "::endgroup::"
-          done
+          case "${{ env.DEPLOY_LAYOUT }}" in
+            plain)
+              echo "::group::Building en_US (plain)"
+              MDBOOK_BOOK__LANGUAGE=en_US mdbook build -d book/
+              echo "::endgroup::"
+              ;;
+            multilang)
+              for po_lang in $(jq -r '.languages[].code' languages.json); do
+                echo "::group::Building $po_lang"
+                langtag=$(jq -r --arg lang "$po_lang" '.languages[] | select(.code == $lang) | .langtag' languages.json)
+                MDBOOK_BOOK__LANGUAGE=$po_lang mdbook build -d book/$langtag/
+                echo "::endgroup::"
+              done
+              ;;
+            multiversion)
+              echo "::group::Building en_US / ${{ env.VERSION }}"
+              MDBOOK_BOOK__LANGUAGE=en_US mdbook build -d book/${{ env.VERSION }}/
+              echo "::endgroup::"
+              ;;
+            full)
+              for po_lang in $(jq -r '.languages[].code' languages.json); do
+                echo "::group::Building $po_lang / ${{ env.VERSION }}"
+                langtag=$(jq -r --arg lang "$po_lang" '.languages[] | select(.code == $lang) | .langtag' languages.json)
+                MDBOOK_BOOK__LANGUAGE=$po_lang mdbook build -d book/$langtag/${{ env.VERSION }}/
+                echo "::endgroup::"
+              done
+              ;;
+          esac
 
       # - name: Test book
       #   run: mdbook test
@@ -87,24 +110,40 @@ jobs:
       #   run: linkchecker book
 
       - name: Create root index.html redirect
+        if: ${{ env.DEPLOY_LAYOUT != 'plain' }}
         run: |
-          default_langtag=$(jq -r '.languages[] | select(.code == "en_US") | .langtag' languages.json)
+          case "${{ env.DEPLOY_LAYOUT }}" in
+            multilang)
+              default_langtag=$(jq -r '.languages[] | select(.code == "en_US") | .langtag' languages.json)
+              target="./${default_langtag}/"
+              ;;
+            multiversion)
+              target="./${{ env.VERSION }}/"
+              ;;
+            full)
+              default_langtag=$(jq -r '.languages[] | select(.code == "en_US") | .langtag' languages.json)
+              target="./${default_langtag}/${{ env.VERSION }}/"
+              ;;
+          esac
           cat > book/index.html << EOF
           <!DOCTYPE html>
           <html>
           <head>
-            <meta http-equiv="refresh" content="0; url=./${default_langtag}/${{ env.VERSION }}/" />
+            <meta http-equiv="refresh" content="0; url=${target}" />
           </head>
           <body>
-            <p>Redirecting to <a href="./${default_langtag}/${{ env.VERSION }}/">${default_langtag}/${{ env.VERSION }}</a></p>
+            <p>Redirecting to <a href="${target}">${target}</a></p>
           </body>
           </html>
           EOF
 
       - name: Copy metadata files to book root
         run: |
-          cp languages.json book/
-          cp versions.json book/
+          case "${{ env.DEPLOY_LAYOUT }}" in
+            multilang)             cp languages.json book/ ;;
+            multiversion)          cp versions.json book/ ;;
+            full)                  cp languages.json book/ && cp versions.json book/ ;;
+          esac
 
       - name: Deploy book
         # if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}

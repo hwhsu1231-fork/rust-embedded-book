@@ -35,21 +35,27 @@
     function createVersionSwitcher(data, siteRoot) {
         const knownVersions = new Set(data.versions.map((v) => v.version));
 
-        // Parse URL:  /<langtag>/<version>/<pagePath>
+        // Scan URL segments for a known version.  Supports all three layouts:
+        //   /<langtag>/<version>/<pagePath>
+        //   /<langtag>/<pagePath>            → version not found → skip
+        //   /<version>/<pagePath>
         const afterSite = fullPath.substring(siteRoot.length);
         const parts = afterSite.split("/").filter(Boolean);
 
-        let langtag = "";
         let currentVersion = data.latest;
-        let pagePath = "/";
-
-        if (parts.length >= 2) {
-            langtag = parts[0];
-            currentVersion = knownVersions.has(parts[1]) ? parts[1] : data.latest;
-            pagePath = "/" + parts.slice(2).join("/");
-        } else if (parts.length === 1) {
-            langtag = parts[0];
+        let versionIdx = -1;
+        for (let i = 0; i < parts.length; i++) {
+            if (knownVersions.has(parts[i])) {
+                versionIdx = i;
+                currentVersion = parts[i];
+                break;
+            }
         }
+        if (versionIdx < 0) return;  // no version in URL — nothing to switch
+
+        // Everything before/after the version stays unchanged.
+        const prefix   = "/" + parts.slice(0, versionIdx).join("/");
+        const pagePath = "/" + parts.slice(versionIdx + 1).join("/");
 
         const container = document.createElement("div");
         container.className = "version-switcher";
@@ -71,7 +77,7 @@
 
         document.getElementById("version-select").addEventListener("change", (e) => {
             const newVersion = e.target.value;
-            window.location.href = siteRoot + "/" + langtag + "/" + newVersion + pagePath;
+            window.location.href = siteRoot + prefix + "/" + newVersion + pagePath;
         });
     }
 })();
