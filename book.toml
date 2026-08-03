@@ -6,7 +6,7 @@ title = "The Embedded Rust Book"
 [output.html]
 git-repository-url = "https://github.com/rust-embedded/book"
 additional-css = [
-  "theme/css/language-switcher.css",
+  "theme/css/switcher.css",
 ]
 additional-js = [
   "theme/js/language-switcher.js",
