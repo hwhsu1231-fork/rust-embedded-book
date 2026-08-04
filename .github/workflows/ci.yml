@@ -29,7 +29,7 @@ env:
   MDBOOK_VERSION: 0.5.1
   MDBOOK_I18N_HELPERS_VERSION: 0.4.0
   # Deployment layout:  plain | multilang | multiversion | full
-  DEPLOY_LAYOUT: ${{ inputs.layout || 'multilang' }}
+  DEPLOY_LAYOUT: ${{ inputs.layout || 'full' }}
   VERSION: ${{ inputs.version || 'master' }}
 
 jobs:
