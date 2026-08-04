@@ -99,9 +99,9 @@ jobs:
               echo "::endgroup::"
               ;;
             multilang)
-              for po_lang in $(jq -r '.languages[].code' languages.json); do
+              for po_lang in $(jq -r '.languages[].code' switcher.json); do
                 echo "::group::Building $po_lang"
-                langtag=$(jq -r --arg lang "$po_lang" '.languages[] | select(.code == $lang) | .langtag' languages.json)
+                langtag=$(jq -r --arg lang "$po_lang" '.languages[] | select(.code == $lang) | .langtag' switcher.json)
                 MDBOOK_BOOK__LANGUAGE=$po_lang mdbook build -d book/$langtag/
                 echo "::endgroup::"
               done
@@ -112,9 +112,9 @@ jobs:
               echo "::endgroup::"
               ;;
             full)
-              for po_lang in $(jq -r '.languages[].code' languages.json); do
+              for po_lang in $(jq -r '.languages[].code' switcher.json); do
                 echo "::group::Building $po_lang / ${{ env.VERSION }}"
-                langtag=$(jq -r --arg lang "$po_lang" '.languages[] | select(.code == $lang) | .langtag' languages.json)
+                langtag=$(jq -r --arg lang "$po_lang" '.languages[] | select(.code == $lang) | .langtag' switcher.json)
                 MDBOOK_BOOK__LANGUAGE=$po_lang mdbook build -d book/$langtag/${{ env.VERSION }}/
                 echo "::endgroup::"
               done
@@ -131,14 +131,14 @@ jobs:
         run: |
           case "${{ env.DEPLOY_LAYOUT }}" in
             multilang)
-              default_langtag=$(jq -r '.languages[] | select(.code == "en_US") | .langtag' languages.json)
+              default_langtag=$(jq -r '.languages[] | select(.code == "en_US") | .langtag' switcher.json)
               target="./${default_langtag}/"
               ;;
             multiversion)
               target="./${{ env.VERSION }}/"
               ;;
             full)
-              default_langtag=$(jq -r '.languages[] | select(.code == "en_US") | .langtag' languages.json)
+              default_langtag=$(jq -r '.languages[] | select(.code == "en_US") | .langtag' switcher.json)
               target="./${default_langtag}/${{ env.VERSION }}/"
               ;;
           esac
@@ -154,13 +154,9 @@ jobs:
           </html>
           EOF
 
-      - name: Copy metadata files to book root
-        run: |
-          case "${{ env.DEPLOY_LAYOUT }}" in
-            multilang)             cp languages.json book/ ;;
-            multiversion)          cp versions.json book/ ;;
-            full)                  cp languages.json book/ && cp versions.json book/ ;;
-          esac
+      - name: Copy switcher.json to book root
+        if: ${{ env.DEPLOY_LAYOUT != 'plain' }}
+        run: cp switcher.json book/
 
       - name: Deploy book
         # if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}

@@ -1,8 +1,0 @@
-{
-  "latest": "stable",
-  "versions": [
-    { "version": "stable", "label": "Stable" },
-    { "version": "beta",   "label": "Beta" },
-    { "version": "master", "label": "Master" }
-  ]
-}
